@@ -2,22 +2,23 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <stdarg.h>
+//#include <stdarg.h>
 #include "table_sjis.h"
 #include "table_utf8.h"
 
 void println(const char* str, ...) {
-    va_list args;
-    va_start(args, str);
-    vprintf(str, args);
-    printf("\n");
-    va_end(args);
+  //    va_list args;
+  //    va_start(args, str);
+  //    vprintf(str, args);
+  //    printf("\n");
+  //    va_end(args);
+  printf("%s\n", str);
 }
 
 FILE* file_open_read(char* filename) {
     FILE* file_ptr = fopen(filename, "r");
     if (file_ptr == NULL) {
-        println("ファイルオープンに失敗しました"); // ファイルオープンエラーの処理
+        println("Failed to open file");
         exit(0);
     }
     return file_ptr;
@@ -25,8 +26,8 @@ FILE* file_open_read(char* filename) {
 
 void file_seek_end(FILE* file_ptr) {
     bool is_error = fseek(file_ptr, 0, SEEK_END);
-    if (is_error) { // ファイルサイズの取得
-        println("fseek(fp, 0, SEEK_END)に失敗しました"); // fseek エラーの処理
+    if (is_error) {
+        println("fseek(fp, 0, SEEK_END) failed");
         exit(0);
     }
 }
@@ -34,7 +35,7 @@ void file_seek_end(FILE* file_ptr) {
 void file_seek_set(FILE* file_ptr) {
     bool is_error = fseek(file_ptr, 0L, SEEK_SET);
     if (is_error) {
-        println("fseek(fp, 0, SEEK_SET)に失敗しました"); // fseek エラーの処理
+        println("fseek(fp, 0, SEEK_SET) failed");
         exit(0);
     }
 }
@@ -50,7 +51,7 @@ int32_t get_file_length(FILE* file_ptr) {
 uint8_t* memory_alloc(int32_t size) {
     uint8_t* memory = (unsigned char*)malloc(size);
     if (memory == NULL) {
-        println("メモリ割り当てに失敗しました"); // メモリ割り当てエラーの処理
+        println("Failed to allocate memory");
         exit(0);
     }
     return memory;
@@ -59,7 +60,7 @@ uint8_t* memory_alloc(int32_t size) {
 void file_read(FILE* file_ptr, uint8_t* data, int32_t size) {
     bool is_error = fread(data, 1, size, file_ptr) < size;
     if (is_error) {
-        println("ファイルの読み取りに失敗しました"); // ファイル読み取りエラーの処理
+        println("Failed to read file");
         exit(0);
     }
 }
@@ -69,20 +70,20 @@ uint8_t* get_file_raw_data(char* filename, int32_t* size) {
     uint8_t* raw_data;
     file_ptr = file_open_read(filename);
     *size = get_file_length(file_ptr);
-    raw_data = memory_alloc(*size); // ファイル全体を格納するメモリを割り当てる 
+    raw_data = memory_alloc(*size);
     file_read(file_ptr, raw_data, *size);
     fclose(file_ptr);
     return raw_data;
 }
 
-// 1バイトのutf8コードをchar配列に格納する
+// utf8 1byte to char
 void utf8_1byte_to_char(char* str,uint32_t utf8_code) {
     uint32_t tmp_utf8 = utf8_code;
     str[1] = '\0';
     str[0] = (uint8_t)tmp_utf8;
 }
 
-// 2バイトのutf8コードをchar配列に格納する
+// utf8 2byte to char
 void utf8_2byte_to_char(char* str, uint32_t utf8_code) {
     uint32_t tmp_utf8 = utf8_code;
     str[2] = '\0';
@@ -91,7 +92,7 @@ void utf8_2byte_to_char(char* str, uint32_t utf8_code) {
     str[0] = (uint8_t)tmp_utf8;
 }
 
-// 3バイトのutf8コードをchar配列に格納する
+// utf8 3byte to char
 void utf8_3byte_to_char(char* str, uint32_t utf8_code) {
     uint32_t tmp_utf8 = utf8_code;
     str[3] = '\0';
@@ -112,7 +113,7 @@ void utf8_to_char(char* str, uint32_t utf8_code) {
     }
 }
 
-int search_sjis_index(uint32_t* table, uint32_t sjis_code) { //指定したSJISコードにマッチする位置を返す
+int search_sjis_index(uint32_t* table, uint32_t sjis_code) { //Return position that matches SJIS code
     int table_len = sizeof(table_sjis) / sizeof(uint32_t);
     for (int i = 0; i < table_len; i++) {
         if (sjis_code == table_sjis[i]) {
@@ -129,7 +130,7 @@ void print_utf8_from_sjis(uint32_t* table, uint32_t sjis_code) {
         char str[4] = "";
         utf8_to_char(str, table_utf8[index]);
         printf("%s", str);
-    } else { // マッチしなかった場合は変換せずに格納する
+    } else { // No convert
         char str[4] = "";
         utf8_to_char(str, sjis_code);
         printf("%s", str);
@@ -138,7 +139,7 @@ void print_utf8_from_sjis(uint32_t* table, uint32_t sjis_code) {
 
 uint32_t get_2byte_from_raw_data(uint8_t* data, int offset) {
     uint32_t code = 0;
-    code += data[offset + 0]; // ２バイト分流し込む
+    code += data[offset + 0]; // get 2byte
     code = code << 8;
     code += data[offset + 1];
     return code;
@@ -147,12 +148,12 @@ uint32_t get_2byte_from_raw_data(uint8_t* data, int offset) {
 void print_sjis_data(uint8_t* data, int32_t size) {
     for(int offset = 0; offset < size; ) {
         if ((data[offset] < 0x80) ||
-            (data[offset] >= 0xA1 && data[offset] <= 0xDF)) { // 1バイト目が0x81未満なら１バイト文字
+            (data[offset] >= 0xA1 && data[offset] <= 0xDF)) { // If first byte is less than 0x81 then 1byte char
             uint32_t sjis_code = 0;
-            sjis_code += data[offset]; // ２バイト分流し込む
+            sjis_code += data[offset]; // get 2byte
             offset += 1;
             print_utf8_from_sjis(table_sjis, sjis_code);
-        } else { // 1バイト目が0x81以上なら２バイト文字
+        } else { // If first byte is greater or equal 0x81 then 2byte char
             uint32_t sjis_code = 0;
             sjis_code = get_2byte_from_raw_data(data, offset);
             offset += 2;
