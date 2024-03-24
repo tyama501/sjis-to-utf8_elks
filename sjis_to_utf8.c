@@ -2,23 +2,23 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
-//#include <stdarg.h>
+#include <stdarg.h>
 #include "table_sjis.h"
 #include "table_utf8.h"
 
 void println(const char* str, ...) {
-  //    va_list args;
-  //    va_start(args, str);
+    va_list args;
+    va_start(args, str);
   //    vprintf(str, args);
+    vfprintf(stdout, str, args);
   //    printf("\n");
-  //    va_end(args);
-  printf("%s\n", str);
+    va_end(args);
 }
 
 FILE* file_open_read(char* filename) {
     FILE* file_ptr = fopen(filename, "r");
     if (file_ptr == NULL) {
-        println("Failed to open file");
+        println("Failed to open file\n");
         exit(0);
     }
     return file_ptr;
@@ -27,7 +27,7 @@ FILE* file_open_read(char* filename) {
 void file_seek_end(FILE* file_ptr) {
     bool is_error = fseek(file_ptr, 0, SEEK_END);
     if (is_error) {
-        println("fseek(fp, 0, SEEK_END) failed");
+        println("SEEK_END failed\n");
         exit(0);
     }
 }
@@ -35,7 +35,7 @@ void file_seek_end(FILE* file_ptr) {
 void file_seek_set(FILE* file_ptr) {
     bool is_error = fseek(file_ptr, 0L, SEEK_SET);
     if (is_error) {
-        println("fseek(fp, 0, SEEK_SET) failed");
+        println("SEEK_SET failed\n");
         exit(0);
     }
 }
@@ -48,26 +48,32 @@ int32_t get_file_length(FILE* file_ptr) {
     return length;
 }
 
-uint8_t* memory_alloc(int32_t size) {
-    uint8_t* memory = (unsigned char*)malloc(size);
+uint8_t __far * memory_alloc(int32_t size) {
+  //    uint8_t* memory = (unsigned char*)malloc(size);
+    uint8_t __far * memory = (unsigned char __far *)fmemalloc(size);
     if (memory == NULL) {
-        println("Failed to allocate memory");
+        println("Failed to allocate\n");
         exit(0);
     }
     return memory;
 }
 
-void file_read(FILE* file_ptr, uint8_t* data, int32_t size) {
-    bool is_error = fread(data, 1, size, file_ptr) < size;
-    if (is_error) {
-        println("Failed to read file");
-        exit(0);
+void file_read(FILE* file_ptr, uint8_t __far * data, int32_t size) {
+  //    bool is_error = fread(data, 1, size, file_ptr) < size;
+  //    if (is_error) {
+  //        println("Failed to read file");
+  //        exit(0);
+  //    }
+    int datget;
+    while ((datget = getc(file_ptr)) != EOF) {
+        *data = datget;
+        data++;
     }
 }
 
-uint8_t* get_file_raw_data(char* filename, int32_t* size) {
+uint8_t __far * get_file_raw_data(char* filename, int32_t* size) {
     FILE *file_ptr;
-    uint8_t* raw_data;
+    uint8_t __far * raw_data;
     file_ptr = file_open_read(filename);
     *size = get_file_length(file_ptr);
     raw_data = memory_alloc(*size);
@@ -129,15 +135,17 @@ void print_utf8_from_sjis(uint32_t* table, uint32_t sjis_code) {
     if (index) {
         char str[4] = "";
         utf8_to_char(str, table_utf8[index]);
-        printf("%s", str);
+        //printf("%s", str);
+        println(str);
     } else { // No convert
         char str[4] = "";
         utf8_to_char(str, sjis_code);
-        printf("%s", str);
+        //printf("%s", str);
+        println(str);
     }
 }
 
-uint32_t get_2byte_from_raw_data(uint8_t* data, int offset) {
+uint32_t get_2byte_from_raw_data(uint8_t __far * data, int offset) {
     uint32_t code = 0;
     code += data[offset + 0]; // get 2byte
     code = code << 8;
@@ -145,7 +153,7 @@ uint32_t get_2byte_from_raw_data(uint8_t* data, int offset) {
     return code;
 }
 
-void print_sjis_data(uint8_t* data, int32_t size) {
+void print_sjis_data(uint8_t __far * data, int32_t size) {
     for(int offset = 0; offset < size; ) {
         if ((data[offset] < 0x80) ||
             (data[offset] >= 0xA1 && data[offset] <= 0xDF)) { // If first byte is less than 0x81 then 1byte char
@@ -163,10 +171,10 @@ void print_sjis_data(uint8_t* data, int32_t size) {
 }
 
 int main() {
-    uint8_t* data;
+    uint8_t __far * data;
     int32_t size;
     data = get_file_raw_data("sjis.txt", &size);
     print_sjis_data(data, size);
-    free(data);
+  //    free(data);
     return 0;
 }
