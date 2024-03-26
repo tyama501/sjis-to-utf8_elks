@@ -170,10 +170,17 @@ void print_sjis_data(uint8_t __far * data, int32_t size) {
     }
 }
 
-int main() {
+int main(int argc, char **argv) {
     uint8_t __far * data;
     int32_t size;
-    data = get_file_raw_data("sjis.txt", &size);
+
+    if (argc > 1) {
+        data = get_file_raw_data(argv[1], &size);
+    } else {
+        println("Usage : sjisutf8 textfile\n");
+        exit(0);
+    }
+
     print_sjis_data(data, size);
   //    free(data);
     return 0;
