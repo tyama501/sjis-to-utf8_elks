@@ -67,7 +67,11 @@ void file_read(FILE* file_ptr, uint8_t __far * data, int32_t size) {
     int datget;
     while ((datget = getc(file_ptr)) != EOF) {
         *data = datget;
-        data++;
+        if (((long)data & 0xFFFF) == 0xFFFF) {
+            data += 0x10000001;  // increment segment
+        } else {
+            data++;
+        }
     }
 }
 
@@ -147,23 +151,41 @@ void print_utf8_from_sjis(uint32_t* table, uint32_t sjis_code) {
 
 uint32_t get_2byte_from_raw_data(uint8_t __far * data, int offset) {
     uint32_t code = 0;
-    code += data[offset + 0]; // get 2byte
+    //   code += data[offset + 0]; // get 2byte
+    //   code = code << 8;
+    //   code += data[offset + 1];
+    code += *data; // get 2byte
     code = code << 8;
-    code += data[offset + 1];
+    if (((long)data & 0xFFFF) == 0xFFFF) {
+        data += 0x10000001;  // increment segment
+    } else {
+        data++;
+    }
+    code += *data;
     return code;
 }
 
 void print_sjis_data(uint8_t __far * data, int32_t size) {
     for(int32_t offset = 0; offset < size; ) {
-        if ((data[offset] < 0x80) ||
-            (data[offset] >= 0xA1 && data[offset] <= 0xDF)) { // If first byte is less than 0x80 then 1byte char
+        if ((*data < 0x80) ||
+            (*data >= 0xA1 && *data <= 0xDF)) { // If first byte is less than 0x80 then 1byte char
             uint32_t sjis_code = 0;
-            sjis_code += data[offset]; // get 2byte
+            sjis_code += *data;
+            if (((long)data & 0xFFFF) == 0xFFFF) {
+                data += 0x10000001;  // increment segment
+            } else {
+                data++;
+            }
             offset += 1;
             print_utf8_from_sjis(table_sjis, sjis_code);
         } else { // If first byte is greater or equal 0x80 then 2byte char
             uint32_t sjis_code = 0;
             sjis_code = get_2byte_from_raw_data(data, offset);
+            if (((long)data & 0xFFFE) == 0xFFFE) {
+                data += 0x10000002;  // increment segment
+            } else {
+                data += 2;
+            }
             offset += 2;
             print_utf8_from_sjis(table_sjis, sjis_code);
         }
