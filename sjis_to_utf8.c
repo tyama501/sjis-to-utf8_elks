@@ -154,14 +154,14 @@ uint32_t get_2byte_from_raw_data(uint8_t __far * data, int offset) {
 }
 
 void print_sjis_data(uint8_t __far * data, int32_t size) {
-    for(int offset = 0; offset < size; ) {
+    for(int32_t offset = 0; offset < size; ) {
         if ((data[offset] < 0x80) ||
-            (data[offset] >= 0xA1 && data[offset] <= 0xDF)) { // If first byte is less than 0x81 then 1byte char
+            (data[offset] >= 0xA1 && data[offset] <= 0xDF)) { // If first byte is less than 0x80 then 1byte char
             uint32_t sjis_code = 0;
             sjis_code += data[offset]; // get 2byte
             offset += 1;
             print_utf8_from_sjis(table_sjis, sjis_code);
-        } else { // If first byte is greater or equal 0x81 then 2byte char
+        } else { // If first byte is greater or equal 0x80 then 2byte char
             uint32_t sjis_code = 0;
             sjis_code = get_2byte_from_raw_data(data, offset);
             offset += 2;
