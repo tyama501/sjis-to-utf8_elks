@@ -67,8 +67,9 @@ void file_read(FILE* file_ptr, uint8_t __far * data, int32_t size) {
     int datget;
     while ((datget = getc(file_ptr)) != EOF) {
         *data = datget;
-        if (((long)data & 0xFFFF) == 0xFFFF) {
-            data += 0x10000001;  // increment segment
+        if (((uint32_t)data & 0xFFFF) == 0xFFFF) {
+            data = (uint8_t __far *)((uint32_t)data + 0x10000000);  // increment segment
+            data = (uint8_t __far *)((uint32_t)data & 0xFFFF0000);  // clear offset
         } else {
             data++;
         }
@@ -156,8 +157,9 @@ uint32_t get_2byte_from_raw_data(uint8_t __far * data, int offset) {
     //   code += data[offset + 1];
     code += *data; // get 2byte
     code = code << 8;
-    if (((long)data & 0xFFFF) == 0xFFFF) {
-        data += 0x10000001;  // increment segment
+    if (((uint32_t)data & 0xFFFF) == 0xFFFF) {
+        data = (uint8_t __far *)((uint32_t)data + 0x10000000);  // increment segment
+        data = (uint8_t __far *)((uint32_t)data & 0xFFFF0000);  // clear offset
     } else {
         data++;
     }
@@ -171,8 +173,9 @@ void print_sjis_data(uint8_t __far * data, int32_t size) {
             (*data >= 0xA1 && *data <= 0xDF)) { // If first byte is less than 0x80 then 1byte char
             uint32_t sjis_code = 0;
             sjis_code += *data;
-            if (((long)data & 0xFFFF) == 0xFFFF) {
-                data += 0x10000001;  // increment segment
+            if (((uint32_t)data & 0xFFFF) == 0xFFFF) {
+                data = (uint8_t __far *)((uint32_t)data + 0x10000000);  // increment segment
+                data = (uint8_t __far *)((uint32_t)data & 0xFFFF0000);  // clear offset
             } else {
                 data++;
             }
@@ -181,8 +184,13 @@ void print_sjis_data(uint8_t __far * data, int32_t size) {
         } else { // If first byte is greater or equal 0x80 then 2byte char
             uint32_t sjis_code = 0;
             sjis_code = get_2byte_from_raw_data(data, offset);
-            if (((long)data & 0xFFFE) == 0xFFFE) {
-                data += 0x10000002;  // increment segment
+            if (((uint32_t)data & 0xFFFF) == 0xFFFE) {
+                data = (uint8_t __far *)((uint32_t)data + 0x10000000);  // increment segment
+                data = (uint8_t __far *)((uint32_t)data & 0xFFFF0000);  // clear offset
+            } else if (((uint32_t)data & 0xFFFF) == 0xFFFF) {
+                data = (uint8_t __far *)((uint32_t)data + 0x10000000);  // increment segment
+                data = (uint8_t __far *)((uint32_t)data & 0xFFFF0000);  // clear offset
+                data = (uint8_t __far *)((uint32_t)data & 0x00000001);  // set offset 1
             } else {
                 data += 2;
             }
