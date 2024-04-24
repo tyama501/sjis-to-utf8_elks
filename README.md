@@ -10,4 +10,9 @@ https://github.com/ghaerr/elks
 # How to use
 ./sjisutf8 sjisfile > utf8file  
 
+# Build
+ELKSのBuild環境が必要です。  
+ELKSのBuild環境構築後、elks/elkscmd/にsjis-to-utf8_elksを置き  
+elks/elkscmd/sjis-to-utf8_elks/でmakeを行うとsjisutf8ができます。  
+
 
