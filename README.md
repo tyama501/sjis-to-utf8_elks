@@ -9,6 +9,11 @@ https://github.com/ghaerr/elks
 
 # How to use
 ./sjisutf8 sjisfile > utf8file  
+(/bin/にインストールした場合はsjisutf8 sjisfile > utf8file)  
+
+最新のnxjtxtvにpipeで繋いで表示することもメモリが足りればできます。  
+sjisutf8 sjisfile | nxjtxtv  
+https://github.com/tyama501/nxjtxtv
 
 # Build
 ELKSのBuild環境が必要です。  
