@@ -189,8 +189,7 @@ void print_sjis_data(uint8_t __far * data, int32_t size) {
                 data = (uint8_t __far *)((uint32_t)data & 0xFFFF0000);  // clear offset
             } else if (((uint32_t)data & 0xFFFF) == 0xFFFF) {
                 data = (uint8_t __far *)((uint32_t)data + 0x10000000);  // increment segment
-                data = (uint8_t __far *)((uint32_t)data & 0xFFFF0000);  // clear offset
-                data = (uint8_t __far *)((uint32_t)data & 0x00000001);  // set offset 1
+                data = (uint8_t __far *)((uint32_t)data & 0xFFFF0001);  // offset 1
             } else {
                 data += 2;
             }
